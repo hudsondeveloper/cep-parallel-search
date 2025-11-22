@@ -1,6 +1,6 @@
 # CEP Parallel Search
 
-Biblioteca Node.js profissional para busca de CEP com múltiplas consultas em paralelo e tratamento robusto de erros.
+Biblioteca Node.js profissional para busca de CEP com múltiplas consultas em paralelo e tratamento robusto de erros e cache de dados.
 
 ## 🚀 Características
 
