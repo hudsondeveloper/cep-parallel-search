@@ -25,6 +25,7 @@ npm install cep-parallel-search
 
 ### Suporte a Módulos
 
+
 A biblioteca suporta CommonJS e ES Modules:
 
 **CommonJS:**
