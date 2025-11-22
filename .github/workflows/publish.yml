@@ -65,10 +65,31 @@ jobs:
         with:
           node-version: '20'
           registry-url: 'https://registry.npmjs.org'
+          # Autenticação npm: use NPM_TOKEN secret OU configure trusted publisher no npm para OIDC
+          # Opção 1 (Token tradicional): Configure NPM_TOKEN como secret no GitHub
+          #   Settings > Secrets and variables > Actions > New repository secret > NPM_TOKEN
+          # Opção 2 (OIDC - mais seguro): Configure trusted publisher no npm
+          #   npm profile set trusted-publishers --github-org SEU_ORG --github-repo SEU_REPO
+          #   Ou via npmjs.com: Account Settings > Access Tokens > Trusted Publishers
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       # Ensure npm 11.5.1 or later is installed
       - name: Update npm
         run: npm install -g npm@latest
+      
+      # Verificar autenticação npm
+      - name: Verificar autenticação npm
+        run: |
+          if [ -z "${{ secrets.NPM_TOKEN }}" ]; then
+            echo "⚠️  NPM_TOKEN não configurado"
+            echo "📝 Configurando autenticação via OIDC (se trusted publisher estiver configurado)"
+            echo "💡 Para usar token tradicional, configure NPM_TOKEN como secret no GitHub"
+          else
+            echo "✅ NPM_TOKEN configurado"
+          fi
+          # Verificar se está autenticado
+          npm whoami --registry=https://registry.npmjs.org || echo "⚠️  Não autenticado (pode ser normal se usar OIDC)"
       
       - run: npm ci
       - run: npm run build --if-present
