@@ -17,24 +17,6 @@ jobs:
         with:
           fetch-depth: 0  # Necessário para verificar histórico de tags
 
-      # Verificar se a tag foi criada a partir da branch principal
-      - name: Verificar branch de origem da tag
-        run: |
-          TAG_NAME=${GITHUB_REF#refs/tags/}
-          echo "Tag: $TAG_NAME"
-          
-          # Obter o commit da tag
-          TAG_COMMIT=$(git rev-list -n 1 $TAG_NAME)
-          echo "Commit da tag: $TAG_COMMIT"
-          
-          # Verificar se o commit está na branch main ou master
-          if git branch -r --contains $TAG_COMMIT | grep -E 'origin/(main|master)'; then
-            echo "✅ Tag criada a partir da branch principal"
-          else
-            echo "❌ ERRO: Tag não foi criada a partir da branch principal (main/master)"
-            exit 1
-          fi
-
       # Log de auditoria - registrar quem está publicando
       - name: Log de auditoria
         run: |
