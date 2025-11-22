@@ -1,0 +1,39 @@
+# Source files
+src/
+test/
+tests/
+__tests__/
+*.test.js
+*.spec.js
+
+# Development files
+.git/
+.gitignore
+.eslintrc*
+.prettierrc*
+jest.config.js
+babel.config.js
+
+# Documentation (keep README.md)
+docs/
+*.md
+!README.md
+
+# CI/CD
+.github/
+.travis.yml
+.circleci/
+
+# Development dependencies
+node_modules/
+npm-debug.log*
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+
