@@ -14,6 +14,52 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Necessário para verificar histórico de tags
+
+      # Verificar se a tag foi criada a partir da branch principal
+      - name: Verificar branch de origem da tag
+        run: |
+          TAG_NAME=${GITHUB_REF#refs/tags/}
+          echo "Tag: $TAG_NAME"
+          
+          # Obter o commit da tag
+          TAG_COMMIT=$(git rev-list -n 1 $TAG_NAME)
+          echo "Commit da tag: $TAG_COMMIT"
+          
+          # Verificar se o commit está na branch main ou master
+          if git branch -r --contains $TAG_COMMIT | grep -E 'origin/(main|master)'; then
+            echo "✅ Tag criada a partir da branch principal"
+          else
+            echo "❌ ERRO: Tag não foi criada a partir da branch principal (main/master)"
+            exit 1
+          fi
+
+      # Log de auditoria - registrar quem está publicando
+      - name: Log de auditoria
+        run: |
+          TAG_NAME=${GITHUB_REF#refs/tags/}
+          TAG_COMMIT=$(git rev-list -n 1 $TAG_NAME)
+          COMMIT_AUTHOR=$(git log -1 --format='%an <%ae>' $TAG_COMMIT)
+          
+          echo "📋 Informações da publicação:"
+          echo "   Tag: $TAG_NAME"
+          echo "   Commit: $TAG_COMMIT"
+          echo "   Autor do commit: $COMMIT_AUTHOR"
+          echo "   Usuário GitHub que fez push: ${{ github.actor }}"
+          echo "   Repositório: ${{ github.repository }}"
+          echo "   Evento: ${{ github.event_name }}"
+          
+          # Se houver uma lista de usuários autorizados no secret, verificar
+          if [ -n "${{ secrets.AUTHORIZED_PUBLISHERS }}" ]; then
+            AUTHORIZED_USERS="${{ secrets.AUTHORIZED_PUBLISHERS }}"
+            if echo "$AUTHORIZED_USERS" | grep -q "${{ github.actor }}"; then
+              echo "✅ Usuário autorizado"
+            else
+              echo "⚠️  ATENÇÃO: Usuário não está na lista de autorizados"
+              echo "   Usuários autorizados: $AUTHORIZED_USERS"
+            fi
+          fi
 
       - uses: actions/setup-node@v4
         with:
@@ -23,7 +69,27 @@ jobs:
       # Ensure npm 11.5.1 or later is installed
       - name: Update npm
         run: npm install -g npm@latest
+      
       - run: npm ci
       - run: npm run build --if-present
       - run: npm test
-      - run: npm publish
+      
+      # Verificar se a versão da tag corresponde à versão do package.json
+      - name: Verificar versão
+        run: |
+          TAG_NAME=${GITHUB_REF#refs/tags/}
+          TAG_VERSION=${TAG_NAME#v}
+          PACKAGE_VERSION=$(node -p "require('./package.json').version")
+          
+          echo "Versão da tag: $TAG_VERSION"
+          echo "Versão do package.json: $PACKAGE_VERSION"
+          
+          if [ "$TAG_VERSION" != "$PACKAGE_VERSION" ]; then
+            echo "❌ ERRO: Versão da tag ($TAG_VERSION) não corresponde à versão do package.json ($PACKAGE_VERSION)"
+            exit 1
+          fi
+          
+          echo "✅ Versões correspondem"
+      
+      - name: Publish to npm
+        run: npm publish --provenance --access public
