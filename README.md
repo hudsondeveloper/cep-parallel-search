@@ -150,6 +150,42 @@ A função `searchCep` aceita as seguintes opções:
 | `providers` | `CepProvider[]` | `[]` (todos) | Lista de provedores a usar |
 | `useCache` | `boolean` | `true` | Se deve usar cache (15 dias de duração) |
 
+### Validação de CEP
+
+A biblioteca fornece uma função para validar o formato de um CEP sem fazer requisições HTTP:
+
+```javascript
+const { isValidCep } = require('cep-parallel-search');
+
+// Validar CEP válido sem hífen
+isValidCep('92500000'); // true
+
+// Validar CEP válido com hífen
+isValidCep('92500-000'); // true
+
+// Validar CEP válido como número
+isValidCep(92500000); // true
+
+// CEPs inválidos
+isValidCep('8434850001'); // false (mais de 8 dígitos)
+isValidCep('12345'); // false (menos de 8 dígitos)
+isValidCep('abc12345'); // false (contém letras)
+isValidCep(null); // false
+isValidCep(undefined); // false
+isValidCep(''); // false
+
+// Aceita CEPs com espaços e outros caracteres especiais
+isValidCep('92500 000'); // true (remove espaços e valida)
+isValidCep('925.00.000'); // true (remove pontos e valida)
+```
+
+**Características:**
+- ✅ Retorna `true` ou `false` (não lança erros)
+- ✅ Aceita string ou número
+- ✅ Remove automaticamente caracteres especiais (hífen, espaços, pontos, etc.)
+- ✅ Valida se tem exatamente 8 dígitos numéricos
+- ✅ Não faz requisições HTTP (validação apenas de formato)
+
 ### Validação de Providers
 
 A biblioteca valida automaticamente os providers fornecidos:
@@ -386,26 +422,52 @@ interface CepResult {
 ### Exemplo 1: Validação de CEP
 
 ```javascript
-const { searchCep, ValidationError } = require('cep-parallel-search');
+const { searchCep, isValidCep, ValidationError } = require('cep-parallel-search');
 
-async function validarCep(cep) {
+// Validação rápida de formato (sem requisição HTTP)
+function validarFormatoCep(cep) {
+  return isValidCep(cep);
+}
+
+// Validação completa (formato + existência)
+async function validarCepCompleto(cep) {
+  // Primeiro valida o formato
+  if (!isValidCep(cep)) {
+    return {
+      valido: false,
+      motivo: 'Formato inválido',
+      erro: 'CEP deve conter exatamente 8 dígitos numéricos'
+    };
+  }
+  
+  // Depois verifica se existe
   try {
     const result = await searchCep(cep);
     return {
       valido: true,
+      existe: true,
       dados: result
     };
   } catch (error) {
-    if (error instanceof ValidationError) {
+    if (error instanceof ServiceError) {
       return {
-        valido: false,
-        motivo: 'Formato inválido',
+        valido: true, // Formato válido
+        existe: false, // Mas não existe na base de dados
+        motivo: 'CEP não encontrado',
         erro: error.message
       };
     }
     throw error;
   }
 }
+
+// Uso
+console.log(validarFormatoCep('92500000')); // true
+console.log(validarFormatoCep('12345')); // false
+
+const resultado = await validarCepCompleto('01310100');
+console.log(resultado);
+// { valido: true, existe: true, dados: {...} }
 ```
 
 ### Exemplo 2: Busca com Fallback e Retry
@@ -613,6 +675,7 @@ import {
   TimeoutError,
   VALID_PROVIDERS,
   isValidProvider,
+  isValidCep,
   clearCache,
   clearExpiredCache,
   getCacheInfo,
@@ -702,6 +765,49 @@ Constante com a lista de providers válidos:
 const { VALID_PROVIDERS } = require('cep-parallel-search');
 console.log(VALID_PROVIDERS);
 // ['brasilapi', 'viacep']
+```
+
+### `isValidCep(cep)`
+
+Valida se um CEP tem formato válido (8 dígitos numéricos). Não faz requisições HTTP, apenas valida o formato.
+
+```javascript
+const { isValidCep } = require('cep-parallel-search');
+
+isValidCep('92500000'); // true
+isValidCep('92500-000'); // true
+isValidCep(92500000); // true
+isValidCep('8434850001'); // false (mais de 8 dígitos)
+isValidCep('12345'); // false (menos de 8 dígitos)
+isValidCep('abc12345'); // false (contém letras)
+```
+
+**Parâmetros:**
+- `cep` (string | number): CEP a ser validado
+
+**Retorna:** `boolean` - `true` se o CEP tem formato válido (8 dígitos numéricos), `false` caso contrário
+
+**Comportamento:**
+- Remove automaticamente caracteres especiais (hífen, espaços, pontos, etc.)
+- Valida se tem exatamente 8 dígitos numéricos
+- Não lança erros, apenas retorna `true` ou `false`
+- Não faz requisições HTTP (validação apenas de formato)
+
+**Exemplos:**
+```javascript
+// CEPs válidos
+isValidCep('01310100'); // true
+isValidCep('01310-100'); // true
+isValidCep('01310 100'); // true (remove espaços)
+isValidCep(1310100); // true (número com 7 dígitos - será validado como 8 após normalização)
+
+// CEPs inválidos
+isValidCep('123456789'); // false (9 dígitos)
+isValidCep('12345'); // false (5 dígitos)
+isValidCep('abc12345'); // false (contém letras)
+isValidCep(null); // false
+isValidCep(undefined); // false
+isValidCep(''); // false
 ```
 
 ### `isValidProvider(provider)`

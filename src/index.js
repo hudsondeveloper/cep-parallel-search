@@ -231,7 +231,9 @@ module.exports = {
   // Exporta utilitários de cache
   clearCache: require('./utils/cache').clearCache,
   clearExpiredCache: require('./utils/cache').clearExpiredCache,
-  getCacheInfo: require('./utils/cache').getCacheInfo
+  getCacheInfo: require('./utils/cache').getCacheInfo,
+  // Exporta utilitário de validação de CEP
+  isValidCep: require('./utils/cepValidator').isValidCep
 };
 
 // Exporta como default também

@@ -101,13 +101,57 @@ function normalizeAndValidateCep(cepRawValue) {
     .then(validateInputLength);
 }
 
+/**
+ * Valida se um CEP é válido (formato)
+ * Retorna true se o CEP tem formato válido, false caso contrário
+ * Não lança erros, apenas retorna boolean
+ * 
+ * @param {string|number} cep - CEP a ser validado
+ * @returns {boolean} true se o CEP tem formato válido, false caso contrário
+ * 
+ * @example
+ * isValidCep('92500000'); // true
+ * isValidCep('92500-000'); // true
+ * isValidCep('8434850001'); // false (mais de 8 dígitos)
+ * isValidCep('12345'); // false (menos de 8 dígitos)
+ * isValidCep('abc12345'); // false (contém letras)
+ */
+function isValidCep(cep) {
+  // Verifica se o CEP é null, undefined ou vazio
+  if (cep === null || cep === undefined || cep === '') {
+    return false;
+  }
+
+  // Verifica se é string ou number
+  const cepTypeOf = typeof cep;
+  if (cepTypeOf !== 'string' && cepTypeOf !== 'number') {
+    return false;
+  }
+
+  try {
+    // Remove caracteres especiais (mantém apenas números)
+    const cepClean = removeSpecialCharacters(cep);
+    
+    // Verifica se tem exatamente 8 dígitos
+    if (cepClean.length === CEP_SIZE) {
+      return true;
+    }
+    
+    return false;
+  } catch (error) {
+    // Se houver qualquer erro durante a validação, retorna false
+    return false;
+  }
+}
+
 module.exports = {
   CEP_SIZE,
   validateInputType,
   removeSpecialCharacters,
   leftPadWithZeros,
   validateInputLength,
-  normalizeAndValidateCep
+  normalizeAndValidateCep,
+  isValidCep
 };
 
 

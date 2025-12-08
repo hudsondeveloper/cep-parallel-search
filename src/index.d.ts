@@ -125,6 +125,24 @@ export function searchCep(
 export function isValidProvider(provider: string): provider is CepProvider;
 
 /**
+ * Valida se um CEP tem formato válido
+ * Retorna true se o CEP tem formato válido (8 dígitos), false caso contrário
+ * Não lança erros, apenas retorna boolean
+ * 
+ * @param cep - CEP a ser validado (pode ser string ou número)
+ * @returns true se o CEP tem formato válido, false caso contrário
+ * 
+ * @example
+ * ```typescript
+ * isValidCep('92500000'); // true
+ * isValidCep('92500-000'); // true
+ * isValidCep('8434850001'); // false
+ * isValidCep('12345'); // false
+ * ```
+ */
+export function isValidCep(cep: string | number): boolean;
+
+/**
  * Limpa todo o cache
  */
 export function clearCache(): boolean;
